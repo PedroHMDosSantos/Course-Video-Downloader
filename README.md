@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
 
@@ -58,3 +59,7 @@ git clone https://github.com/SEU_USUARIO/downloader-curso.git
 cd downloader-curso
 pip install -r requirements.txt
 python src/app.py
+=======
+# Course-Video-Downloader
+Aplicativo para baixar vídeos de cursos online (.m3u8) com interface gráfica.
+>>>>>>> 55e851a979d0865037678c15c82b7e2337682eac
