@@ -8,6 +8,7 @@ from tkinter import filedialog, ttk
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -34,7 +35,7 @@ def log2(msg):
 # =========================
 def encontrar_ffmpeg():
     if os.path.exists("ffmpeg.exe"):
-        return "ffmpeg.exe"
+        return os.path.abspath("ffmpeg.exe")
 
     try:
         subprocess.run(["ffmpeg", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -61,21 +62,13 @@ def instalar_ffmpeg():
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(temp_dir)
 
-        ffmpeg_encontrado = None
-
         for root_dir, dirs, files in os.walk(temp_dir):
             if "ffmpeg.exe" in files:
-                ffmpeg_encontrado = os.path.join(root_dir, "ffmpeg.exe")
-                break
+                shutil.copy(os.path.join(root_dir, "ffmpeg.exe"), "ffmpeg.exe")
+                log2("✅ FFmpeg instalado com sucesso!")
+                return
 
-        if not ffmpeg_encontrado:
-            log2("❌ FFmpeg não encontrado no zip")
-            return
-
-        destino = os.getcwd()
-        shutil.copy(ffmpeg_encontrado, os.path.join(destino, "ffmpeg.exe"))
-
-        log2("✅ FFmpeg instalado com sucesso!")
+        log2("❌ FFmpeg não encontrado no zip")
 
     except Exception as e:
         log2(f"❌ Erro: {e}")
@@ -86,9 +79,17 @@ def instalar_ffmpeg():
 # =========================
 def abrir_navegador():
     global driver
-    driver = webdriver.Chrome()
-    driver.get(entry_url.get())
-    log2("🌐 Navegador aberto")
+
+    try:
+        # Corrige problema no .exe (chromedriver)
+        service = Service()
+        driver = webdriver.Chrome(service=service)
+
+        driver.get(entry_url.get())
+        log2("🌐 Navegador aberto")
+
+    except Exception as e:
+        log2(f"❌ Erro ao abrir navegador: {e}")
 
 
 # =========================
@@ -96,6 +97,18 @@ def abrir_navegador():
 # =========================
 def login_feito():
     log2("✅ Login confirmado, pronto pra baixar")
+
+
+# =========================
+# 🎬 ESPERAR VIDEO CARREGAR
+# =========================
+def esperar_video(wait):
+    return wait.until(
+        lambda d: d.execute_script("""
+            let v = document.querySelector('video source');
+            return v && v.src ? v.src : null;
+        """)
+    )
 
 
 # =========================
@@ -123,6 +136,7 @@ def processo_download():
 
     for i in range(total):
         try:
+            # 🔥 evita stale element
             containers = driver.find_elements(By.CSS_SELECTOR, "div.cursor-pointer")
             container = containers[i]
 
@@ -133,17 +147,11 @@ def processo_download():
             driver.execute_script("arguments[0].scrollIntoView(true);", container)
             time.sleep(1)
 
-            try:
-                container.click()
-            except:
-                driver.execute_script("arguments[0].click();", container)
+            # 🔥 click mais confiável
+            driver.execute_script("arguments[0].click();", container)
 
-            # 🔥 espera vídeo carregar
-            video = wait.until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "video source"))
-            )
-
-            url_video = video.get_attribute("src")
+            # 🔥 espera vídeo carregar sem sleep
+            url_video = esperar_video(wait)
 
             if not url_video:
                 log2("❌ Não achou link")
@@ -163,7 +171,7 @@ def processo_download():
                 "-i", url_video,
                 "-c", "copy",
                 arquivo_saida
-            ])
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
             log2("✅ Concluído")
 
@@ -176,6 +184,9 @@ def processo_download():
     log2("🏁 Finalizado!")
 
 
+# =========================
+# 🚀 INICIAR DOWNLOAD
+# =========================
 def iniciar_download():
     threading.Thread(target=processo_download).start()
 
@@ -198,7 +209,25 @@ root.geometry("600x500")
 
 entry_url = tk.Entry(root, width=70)
 entry_url.pack(pady=5)
-entry_url.insert(0, "COLE A URL DO CURSO AQUI") 
+
+#✏️ PLACEHOLDER URL
+
+def on_focus_in(event):
+    if entry_url.get() == "COLE A URL DO CURSO AQUI":
+        entry_url.delete(0, tk.END)
+        entry_url.config(fg="black")
+
+def on_focus_out(event):
+    if entry_url.get() == "":
+        entry_url.insert(0, "COLE A URL DO CURSO AQUI")
+        entry_url.config(fg="gray")
+
+
+entry_url.insert(0, "COLE A URL DO CURSO AQUI")
+entry_url.config(fg="gray")
+
+entry_url.bind("<FocusIn>", on_focus_in)
+entry_url.bind("<FocusOut>", on_focus_out)
 
 tk.Button(root, text="🌐 Abrir Navegador", command=abrir_navegador).pack(pady=5)
 tk.Button(root, text="🔐 Já fiz login", command=login_feito).pack(pady=5)
