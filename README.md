@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
 
@@ -12,7 +11,7 @@ Aplicativo em Python para baixar vídeos de plataformas que utilizam streaming `
 
 👉 Clique abaixo para baixar o instalador:
 
-[![Download Setup](https://img.shields.io/badge/Download-Setup-blue?style=for-the-badge&logo=windows)](https://github.com/SEU_USUARIO/downloader-curso/releases/download/v1.0/setup-downloader.exe)
+[![Download Setup](https://github.com/PedroHMDosSantos/Course-Video-Downloader/releases/download/v1.0/setup_downloader.exe)]
 
 ---
 
@@ -59,7 +58,3 @@ git clone https://github.com/SEU_USUARIO/downloader-curso.git
 cd downloader-curso
 pip install -r requirements.txt
 python src/app.py
-=======
-# Course-Video-Downloader
-Aplicativo para baixar vídeos de cursos online (.m3u8) com interface gráfica.
->>>>>>> 55e851a979d0865037678c15c82b7e2337682eac
