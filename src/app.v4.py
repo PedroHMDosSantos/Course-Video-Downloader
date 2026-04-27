@@ -1,10 +1,10 @@
 import os
-import sys
 import time
 import threading
 import subprocess
 import tkinter as tk
-from tkinter import filedialog, ttk
+import customtkinter as ctk
+from tkinter import filedialog
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -17,28 +17,30 @@ import shutil
 import tempfile
 
 # =========================
-# 🌍 VARIÁVEIS GLOBAIS
+# 🎨 UI MODERNA
 # =========================
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("green")
+
 driver = None
 pasta_destino = os.getcwd()
 ffmpeg_path = None
 
 
 # =========================
-# 🔍 LOG NA INTERFACE
+# 🧾 LOG
 # =========================
-def log2(msg):
-    log_text.insert(tk.END, msg + "\n")
-    log_text.see(tk.END)
+def log(msg):
+    log_box.insert("end", msg + "\n")
+    log_box.see("end")
 
 
 # =========================
-# 🔍 ENCONTRAR FFMPEG
+# 🔍 FFMPEG
 # =========================
 def encontrar_ffmpeg():
     if os.path.exists("ffmpeg.exe"):
         return "ffmpeg.exe"
-
     try:
         subprocess.run(["ffmpeg", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return "ffmpeg"
@@ -46,12 +48,9 @@ def encontrar_ffmpeg():
         return None
 
 
-# =========================
-# 📥 INSTALAR FFMPEG
-# =========================
 def instalar_ffmpeg():
     try:
-        log2("⬇️ Baixando FFmpeg...")
+        log("⬇️ Baixando FFmpeg...")
 
         url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
         temp_dir = tempfile.mkdtemp()
@@ -59,7 +58,7 @@ def instalar_ffmpeg():
 
         urllib.request.urlretrieve(url, zip_path)
 
-        log2("📦 Extraindo...")
+        log("📦 Extraindo...")
 
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(temp_dir)
@@ -67,24 +66,24 @@ def instalar_ffmpeg():
         for root_dir, dirs, files in os.walk(temp_dir):
             if "ffmpeg.exe" in files:
                 shutil.copy(os.path.join(root_dir, "ffmpeg.exe"), os.getcwd())
-                log2("✅ FFmpeg instalado com sucesso!")
+                log("✅ FFmpeg instalado!")
                 return
 
-        log2("❌ FFmpeg não encontrado no zip")
+        log("❌ FFmpeg não encontrado")
 
     except Exception as e:
-        log2(f"❌ Erro: {e}")
+        log(f"❌ Erro: {e}")
 
 
 # =========================
-# 🌐 ABRIR NAVEGADOR
+# 🌐 NAVEGADOR
 # =========================
 def abrir_navegador():
     global driver
 
     try:
         if driver:
-            log2("⚠️ Navegador já está aberto")
+            log("⚠️ Já aberto")
             return
 
         from selenium.webdriver.chrome.service import Service
@@ -94,21 +93,27 @@ def abrir_navegador():
         driver = webdriver.Chrome(service=service)
 
         driver.get(entry_url.get())
-        log2("🌐 Navegador aberto")
+        log("🌐 Navegador aberto")
 
     except Exception as e:
-        log2(f"❌ Erro ao abrir navegador: {e}")
+        log(f"❌ Erro: {e}")
 
 
-# =========================
-# 🔐 LOGIN FEITO
-# =========================
 def login_feito():
-    log2("✅ Login confirmado, pronto pra baixar")
+    log("✅ Login confirmado")
 
 
 # =========================
-# ⬇️ PROCESSO DOWNLOAD
+# 📁 PASTA
+# =========================
+def escolher_pasta():
+    global pasta_destino
+    pasta_destino = filedialog.askdirectory()
+    log(f"📁 Pasta: {pasta_destino}")
+
+
+# =========================
+# ⬇️ DOWNLOAD
 # =========================
 def processo_download():
     global ffmpeg_path
@@ -116,19 +121,19 @@ def processo_download():
     ffmpeg_path = encontrar_ffmpeg()
 
     if not ffmpeg_path:
-        log2("❌ FFmpeg não encontrado!")
+        log("❌ FFmpeg não encontrado")
         return
 
     wait = WebDriverWait(driver, 20)
 
-    log2("🔍 Procurando vídeos...")
+    log("🔍 Buscando vídeos...")
 
     containers = wait.until(
         EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.cursor-pointer"))
     )
 
     total = len(containers)
-    progresso["maximum"] = total
+    progress.set(0)
 
     for i in range(total):
         try:
@@ -137,7 +142,7 @@ def processo_download():
 
             titulo = container.text.split("\n")[0].strip().replace("/", "-")
 
-            log2(f"🎬 {titulo}")
+            log(f"🎬 {titulo}")
 
             driver.execute_script("arguments[0].scrollIntoView(true);", container)
 
@@ -146,7 +151,6 @@ def processo_download():
             except:
                 driver.execute_script("arguments[0].click();", container)
 
-            # 🔥 espera vídeo carregar (SEM sleep)
             video = wait.until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "video source"))
             )
@@ -154,16 +158,16 @@ def processo_download():
             url_video = video.get_attribute("src")
 
             if not url_video:
-                log2("❌ Não achou link")
+                log("❌ Sem link")
                 continue
 
             arquivo_saida = os.path.join(pasta_destino, f"{titulo}.mp4")
 
             if os.path.exists(arquivo_saida):
-                log2("⏩ Já existe, pulando")
+                log("⏩ Já existe")
                 continue
 
-            log2("⬇️ Baixando...")
+            log("⬇️ Baixando...")
 
             subprocess.run([
                 ffmpeg_path,
@@ -173,54 +177,63 @@ def processo_download():
                 arquivo_saida
             ])
 
-            log2("✅ Concluído")
+            progress.set((i + 1) / total)
 
-            progresso["value"] = i + 1
+            log("✅ Concluído")
 
         except Exception as e:
-            log2(f"⚠️ Erro: {e}")
-            continue
+            log(f"⚠️ Erro: {e}")
 
-    log2("🏁 Finalizado!")
+    log("🏁 Finalizado!")
 
 
 def iniciar_download():
-    threading.Thread(target=processo_download).start()
+    threading.Thread(target=processo_download, daemon=True).start()
 
 
 # =========================
-# 📁 ESCOLHER PASTA
+# 🖥️ UI MODERNA
 # =========================
-def escolher_pasta():
-    global pasta_destino
-    pasta_destino = filedialog.askdirectory()
-    log2(f"📁 Pasta: {pasta_destino}")
+root = ctk.CTk()
+root.title("Downloader PRO")
+root.geometry("750x600")
 
 
-# =========================
-# 🖥️ INTERFACE
-# =========================
-root = tk.Tk()
-root.title("Downloader de Curso")
-root.geometry("600x500")
+# URL
+entry_url = ctk.CTkEntry(root, width=500, placeholder_text="Cole a URL aqui...")
+entry_url.pack(pady=15)
 
-entry_url = tk.Entry(root, width=70)
-entry_url.pack(pady=5)
 
-tk.Button(root, text="🌐 Abrir Navegador", command=abrir_navegador).pack(pady=5)
-tk.Button(root, text="🔐 Já fiz login", command=login_feito).pack(pady=5)
-tk.Button(root, text="📁 Escolher pasta", command=escolher_pasta).pack(pady=5)
-tk.Button(root, text="⚙️ Instalar FFmpeg", command=lambda: threading.Thread(target=instalar_ffmpeg).start()).pack(pady=5)
-tk.Button(root, text="⬇️ Baixar Curso", command=iniciar_download).pack(pady=10)
+# BOTÕES
+ctk.CTkButton(root, text="🌐 Abrir Navegador", command=abrir_navegador).pack(pady=5)
+ctk.CTkButton(root, text="🔐 Login feito", command=login_feito).pack(pady=5)
+ctk.CTkButton(root, text="📁 Escolher pasta", command=escolher_pasta).pack(pady=5)
 
-progresso = ttk.Progressbar(root, length=500)
-progresso.pack(pady=10)
+ctk.CTkButton(
+    root,
+    text="⚙️ Instalar FFmpeg",
+    command=lambda: threading.Thread(target=instalar_ffmpeg, daemon=True).start()
+).pack(pady=5)
 
-log_text = tk.Text(root, height=15)
-log_text.pack()
+ctk.CTkButton(
+    root,
+    text="⬇️ BAIXAR CURSO",
+    fg_color="green",
+    hover_color="#0a8f3c",
+    command=iniciar_download
+).pack(pady=10)
 
-# =========================
-# 🚀 INICIAR APP
-# =========================
-if __name__ == "__main__":
-    root.mainloop()
+
+# PROGRESS
+progress = ctk.CTkProgressBar(root, width=600)
+progress.set(0)
+progress.pack(pady=10)
+
+
+# LOGS
+log_box = ctk.CTkTextbox(root, width=700, height=250)
+log_box.pack(pady=10)
+
+
+# START
+root.mainloop()
