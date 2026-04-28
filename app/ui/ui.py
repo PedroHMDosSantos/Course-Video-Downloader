@@ -3,7 +3,7 @@ from tkinter import filedialog, ttk
 
 from app.core.selenium_bridge import abrir_navegador
 from app.core.core_controller import baixar_aula_atual, baixar_curso_completo
-from app.core.ffmpeg_manager import encontrar_ffmpeg
+from app.core.ffmpeg_manager import encontrar_ffmpeg, instalar_ffmpeg
 
 pasta_destino = None
 
@@ -81,8 +81,16 @@ def create_app():
 
         if ffmpeg:
             log(f"✅ FFmpeg OK: {ffmpeg}")
-        else:
-            log("❌ FFmpeg não encontrado")
+            return
+
+        log("⚠️ FFmpeg não encontrado")
+        log("⬇️ Iniciando instalação...")
+
+        import threading
+        threading.Thread(
+            target=lambda: instalar_ffmpeg(log),
+            daemon=True
+        ).start()
 
     def baixar_atual():
         if not pasta_destino:
