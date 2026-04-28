@@ -49,7 +49,7 @@ Aplicação desktop em Python para automatizar downloads de cursos online usando
 
 👉 Clique abaixo para baixar a versão mais recente:
 
-[⬇️ Download Instalador](COLE_SEU_LINK_AQUI)
+[⬇️ Download Instalador](https://github.com/PedroHMDosSantos/Course-Video-Downloader/releases/download/v2.0/Cuser.Video.Dowloader-setup.exe)
 
 
 ## 📦 Instalação
