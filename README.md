@@ -30,7 +30,7 @@ Aplicação desktop em Python para automatizar downloads de cursos online usando
 ## 🖼️ Screenshot do Aplicativo
 
 <p align="left">
-  <img src="assets/preview.png" width="500">
+  <img src="assets/preview.png" width="700">
 </p>
 
 
